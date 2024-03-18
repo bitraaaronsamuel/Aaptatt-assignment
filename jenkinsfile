@@ -1,0 +1,45 @@
+pipeline
+{
+    agent any
+
+    stages
+    {
+        stage('Checkout') 
+        {
+            steps
+            {
+                git 'https://github.com/TeamAaptatt/Aaptatt-hiring-assignment.git'
+            }
+        }
+        stage('Build') 
+        {
+            steps
+            {
+                sh 'mvn package'
+            }
+        }
+        stage('Create docker image') 
+        {
+            steps
+            {
+                sh 'cp /var/lib/jenkins/workspace/assignment/target/sparkjava-hello-world-1.0.war .'
+                sh '''cat>Dockerfile<<EOF
+FROM tomcat:8
+RUN mv webapps webappsbkp
+RUN mv webapps.dist webapps
+COPY sparkjava-hello-world-1.0.war /usr/local/tomcat/webapps/sparkjava-hello-world-1.0.war
+EOF'''
+sh 'docker build -t sambitra/testapp .'
+            }
+        }
+        stage('Push Docker image') 
+        {
+            steps
+            {
+                sh 'docker push sambitra/testapp '
+                sh 'docker run --name test -d -p 8989:8080 sambitra/testapp '
+            }
+        }
+    }
+}
+
